@@ -63,10 +63,16 @@ python3 -m http.server 8000
 `p` 英文、`i` 整词音标、`ia` 填空词的音标、`h` 助记法、`c` 中文释义、
 `a` 课程里挖空要填的词、`s` 挖空句（`__BLANK__` 是空位标记）。
 
-音标来源：开源英语词典（Wiktionary 数据）批量抓取后统一成英式宽式标音，
-词典没收录的医学词手工补写；`vocab_web/lexicon.json` 是最终词表，
-`vocab_web/ipa_fix.json` 是手工修正表（可重复运行 `normalize_lexicon.py` 再生成）。
-个别词仍可能有词典分歧，发现错的直接往 `ipa_fix.json` 里加一条。
+**音标来源：Oxford Learner's Dictionaries（LDOCE）英式标音**，逐词抓取后统一处理
+（`vocab_web/build_ox_lexicon.py`）。420 个词里 369 个直接命中 Oxford 词条，
+14 个由原形 + 词尾读音规则推出（复数/过去式/-ing），37 个（医学专名、连字符短语、
+Oxford 未单独收词形的）走人工兜底表 `vocab_web/ipa_final_fix.json`，优先级最高。
+
+之前用开源维基词典数据时，160 个词的标音与 Oxford 不一致（含 `vaccine` 这类明显错的），
+已全部以 Oxford 为准替换；旧的维基版留在 `vocab_web/lexicon.wikt.bak.json` 备查。
+
+发现别扭的音标，往 `vocab_web/ipa_final_fix.json` 加一条，重跑
+`build_ox_lexicon.py` → `make_vocab_web.py` 即可。
 
 数据仅供个人学习使用；词表本身来自教材与配套课程，重分发前请自行确认版权边界。
 

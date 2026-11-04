@@ -2,7 +2,7 @@
 
 学术英语（医学）Unit 1–8 课程词表的手机背词网页。单文件、无框架、无后端，可离线，能加到主屏幕当 App 用。
 
-在线地址（开 GitHub Pages 后填这里）：`https://<你的用户名>.github.io/med-vocab-cards/`
+在线地址：**https://zyf2492313716-cloud.github.io/med-vocab-cards/**
 
 ## 四种练法
 
@@ -32,10 +32,12 @@ python3 -m http.server 8000
 
 直接双击 `index.html` 用 file:// 打开也能用，只是 Service Worker 不生效（离线缓存需要 http）。
 
-## 部署到 GitHub Pages
+## 打开与安装
 
-仓库设置 → Pages → Source 选 `Deploy from a branch` → 分支 `main` / 目录 `/ (root)` → Save。
-约一分钟后上面的地址即可访问。手机 Safari 打开 → 分享 → 添加到主屏幕。
+手机/电脑浏览器直接访问上面的在线地址。iPhone Safari 打开后点「分享 → 添加到主屏幕」，
+就是一个全屏独立图标，断网也能打开（Service Worker 已缓存全部资源）。
+
+重新部署：仓库设置 → Pages → Source 选 `Deploy from a branch` → 分支 `main` / 目录 `/ (root)`。
 
 改了 `index.html` 之后，把 `sw.js` 里的 `VERSION` 往上加一位（`zanci-v2`），
 否则手机端会继续用旧缓存。

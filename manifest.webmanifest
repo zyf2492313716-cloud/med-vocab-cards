@@ -1,0 +1,17 @@
+{
+  "name": "医学英语斩词 · 学术英语（医学）Unit 1–8 词表",
+  "short_name": "斩词",
+  "description": "248 条医学英语词表的背词 / 选义 / 拼写 / 填空练习，离线可用",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1F6FB",
+  "theme_color": "#00B2FF",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "./icons/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

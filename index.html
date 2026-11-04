@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#00B2FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="斩词">
+<title>医学英语斩词</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<style>
+:root{
+  --sky:#00B2FF; --sky-deep:#0090E0; --yellow:#FFCE31; --green:#35C97A; --green-deep:#25A862;
+  --orange:#FF9A3C; --red:#FF5B5B; --purple:#8C7BFF;
+  --bg:#F1F6FB; --card:#FFFFFF; --ink:#16283C; --sub:#8496A8; --line:#E4EDF5;
+  --sh:0 12px 30px rgba(23,88,150,.14), 0 3px 8px rgba(23,88,150,.08);
+  --fs:32px;
+}
+html[data-theme="dark"]{
+  --bg:#0D1520; --card:#18222F; --ink:#E9F1F8; --sub:#8FA3B8; --line:#243244;
+  --sky:#38BFFF; --sh:0 14px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;color:var(--ink);background:var(--bg);
+  font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",sans-serif;
+  display:flex;flex-direction:column;overflow-x:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overscroll-behavior-y:contain;
+}
+button{font-family:inherit}
+
+/* ===== 顶栏 ===== */
+.topbar{display:flex;align-items:center;gap:9px;padding:12px 16px 6px}
+.logo{
+  width:36px;height:36px;border-radius:13px;flex:0 0 auto;
+  background:linear-gradient(150deg,var(--sky),#5CD6FF);
+  display:grid;place-items:center;font-size:20px;box-shadow:0 5px 14px rgba(0,178,255,.4)
+}
+.title{font-size:17px;font-weight:800;flex:1;min-width:0;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;
+  font-size:12px;font-weight:800;color:var(--sub);display:flex;align-items:center;gap:5px;flex:0 0 auto
+}
+.pill b{color:var(--sky-deep);font-size:15px}
+html[data-theme="dark"] .pill b{color:var(--sky)}
+.tool{width:36px;height:36px;border-radius:13px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:16px;cursor:pointer;flex:0 0 auto}
+
+/* ===== 进度 ===== */
+.prog{margin:6px 16px 12px}
+.prog .track{height:12px;border-radius:999px;background:rgba(0,140,224,.13);overflow:hidden;position:relative}
+html[data-theme="dark"] .prog .track{background:#22303f}
+.prog .track i{
+  display:block;height:100%;width:0;border-radius:999px;transition:width .4s cubic-bezier(.3,1.3,.5,1);
+  background:linear-gradient(90deg,var(--sky),#6FE3A3)
+}
+.prog .meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--sub);margin-top:6px}
+
+/* ===== 模式标签 ===== */
+.tabs{display:flex;gap:7px;padding:0 16px 11px}
+.tabs button{
+  flex:1;min-width:0;min-height:44px;border-radius:15px;border:none;background:var(--card);color:var(--sub);
+  font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(23,88,150,.08);transition:transform .12s
+}
+.tabs button:active{transform:scale(.95)}
+.tabs button[aria-pressed="true"]{
+  background:linear-gradient(150deg,var(--sky),var(--sky-deep));color:#fff;box-shadow:0 7px 18px rgba(0,178,255,.42)
+}
+.chips{display:flex;gap:8px;padding:0 16px 11px;overflow-x:auto;min-width:0;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;min-height:33px;padding:0 13px;border-radius:999px;border:1.5px solid var(--line);
+  background:var(--card);color:var(--sub);font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:5px
+}
+.chip[aria-pressed="true"]{background:#E3F5FF;border-color:var(--sky);color:var(--sky-deep)}
+html[data-theme="dark"] .chip[aria-pressed="true"]{background:#153046;color:#6FD0FF}
+.chip .n{opacity:.6}
+.chip .em{font-size:15px}
+
+/* ===== 卡片 ===== */
+main{flex:1;display:flex;flex-direction:column;padding:2px 16px 10px;min-height:0;min-width:0}
+.card{
+  background:var(--card);border-radius:28px;box-shadow:var(--sh);overflow:hidden;position:relative;
+  flex:1;display:flex;flex-direction:column;animation:in .34s cubic-bezier(.2,1.2,.4,1)
+}
+@keyframes in{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.pic{
+  height:clamp(132px,19vh,208px);display:grid;place-items:center;position:relative;flex:0 0 auto;
+  background:linear-gradient(140deg,var(--c1,#BFE9FF),var(--c2,#E8F7FF))
+}
+.pic>*{position:relative;z-index:2}
+.pic .em{font-size:52px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.14))}
+.pic .wm{position:absolute;right:14px;bottom:-10px;font-size:74px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:-3px}
+html[data-theme="dark"] .pic .wm{color:rgba(255,255,255,.13)}
+html[data-theme="dark"] .star{background:rgba(0,0,0,.3);color:#B9CBDD}
+html[data-theme="dark"] .pic::after{content:"";position:absolute;inset:0;z-index:1;background:rgba(9,16,26,.5)}
+.pic .utag{
+  position:absolute;left:14px;top:12px;background:rgba(255,255,255,.82);border-radius:999px;
+  padding:5px 11px;font-size:11px;font-weight:900;color:#2A4A66;letter-spacing:.4px
+}
+html[data-theme="dark"] .pic .utag{background:rgba(0,0,0,.3);color:#DCEBF7}
+.body{padding:22px 20px 24px;position:relative;flex:1;display:flex;flex-direction:column;justify-content:center}
+.word{
+  font-size:var(--fs);line-height:1.2;font-weight:900;letter-spacing:-.4px;word-break:break-word;
+  font-family:ui-rounded,"SF Pro Rounded",-apple-system,"Segoe UI",sans-serif
+}
+.word .blank{color:var(--sky);letter-spacing:1px}
+.word .tip{color:var(--green-deep)}
+html[data-theme="dark"] .word .tip{color:var(--green)}
+.phon{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--sub);font-size:13px;font-weight:700}
+.spk{
+  width:34px;height:34px;border-radius:12px;border:none;cursor:pointer;flex:0 0 auto;
+  background:linear-gradient(150deg,var(--sky),var(--sky-deep));color:#fff;font-size:15px;
+  display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,178,255,.4)
+}
+.spk:active{transform:scale(.92)}
+.mean{
+  margin-top:16px;background:#F3F9FE;border-radius:16px;padding:14px 15px;font-size:17px;font-weight:800;line-height:1.55
+}
+html[data-theme="dark"] .mean{background:#132030}
+.mean .key{display:block;margin-top:8px;font-size:13px;font-weight:700;color:var(--sub)}
+.mean .key b{color:var(--sky-deep);font-size:15px}
+html[data-theme="dark"] .mean .key b{color:var(--sky)}
+.star{position:absolute;top:12px;right:12px;z-index:4;border:none;cursor:pointer;line-height:1;font-size:20px;
+  width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.8);display:grid;place-items:center}
+.star{color:#9FB3C8}
+.star[aria-pressed="true"]{color:var(--yellow);text-shadow:0 3px 10px rgba(255,206,49,.7)}
+input[type=text]{
+  width:100%;margin-top:16px;font-size:19px;font-weight:800;font-family:inherit;color:var(--ink);
+  background:#F3F9FE;border:2px solid var(--line);border-radius:16px;padding:14px 16px;outline:none
+}
+html[data-theme="dark"] input[type=text]{background:#132030}
+input[type=text]:focus{border-color:var(--sky);box-shadow:0 0 0 4px rgba(0,178,255,.16)}
+.verdict{margin-top:12px;font-size:15px;font-weight:900;min-height:22px}
+.verdict.ok{color:var(--green-deep)} .verdict.bad{color:var(--red)}
+html[data-theme="dark"] .verdict.ok{color:var(--green)}
+.empty{display:grid;place-items:center;flex:1;text-align:center;color:var(--sub);font-weight:800}
+.empty .big{font-size:56px;display:block;margin-bottom:12px}
+.empty .s{font-size:12px;font-weight:700;margin-top:6px}
+
+/* 四选一 */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.opt{
+  min-height:64px;border-radius:18px;border:2px solid var(--line);background:#F7FBFF;color:var(--ink);
+  font-size:15px;font-weight:800;cursor:pointer;padding:10px 12px;line-height:1.35;display:flex;align-items:center;justify-content:center;text-align:center
+}
+html[data-theme="dark"] .opt{background:#132030}
+.opt:active{transform:scale(.97)}
+.opt.right{background:linear-gradient(150deg,var(--green),var(--green-deep));border-color:var(--green);color:#fff}
+.opt.wrong{background:#FFEFEF;border-color:var(--red);color:var(--red)}
+html[data-theme="dark"] .opt.wrong{background:#3a1c22;color:#FF9A9A}
+
+/* ===== 底部按钮 ===== */
+footer{padding:10px 16px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px}
+.btn{
+  min-height:56px;border-radius:20px;border:none;font-size:17px;font-weight:900;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .12s
+}
+.btn:active{transform:scale(.96)}
+.btn.doubt{flex:1;background:linear-gradient(150deg,#FFC07F,var(--orange));color:#7A3E00;box-shadow:0 7px 18px rgba(255,154,60,.36)}
+.btn.know{flex:1;background:linear-gradient(150deg,#5FE0A0,var(--green-deep));color:#fff;box-shadow:0 7px 18px rgba(53,201,122,.42)}
+.btn.go{flex:1;background:linear-gradient(150deg,var(--sky),var(--sky-deep));color:#fff;box-shadow:0 7px 18px rgba(0,178,255,.42)}
+.btn.skip{flex:0 0 auto;min-width:92px;background:var(--card);color:var(--sub);border:1.5px solid var(--line);font-size:15px}
+.btn.off{opacity:.45}
+
+/* ===== 反馈 ===== */
+@keyframes shake{10%,90%{transform:translateX(-3px)}30%,70%{transform:translateX(6px)}50%{transform:translateX(-7px)}}
+.shake{animation:shake .42s}
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:80;
+  background:var(--ink);color:var(--card);font-size:14px;font-weight:800;padding:11px 18px;border-radius:14px;
+  box-shadow:0 10px 26px rgba(0,0,0,.25);animation:tin .2s ease-out;max-width:80vw;text-align:center
+}
+.toast.ok{background:linear-gradient(150deg,#5FE0A0,var(--green-deep));color:#fff}
+.toast.bad{background:linear-gradient(150deg,#FF8A8A,#E04040);color:#fff}
+@keyframes tin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.floatup{
+  position:fixed;left:50%;top:34%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  background:linear-gradient(150deg,#5FE0A0,var(--green-deep));color:#fff;font-weight:900;font-size:18px;
+  padding:11px 22px;border-radius:999px;box-shadow:0 12px 26px rgba(53,201,122,.5);animation:fly 1.05s ease-out forwards
+}
+@keyframes fly{0%{opacity:0;transform:translate(-50%,12px) scale(.8)}22%{opacity:1}100%{opacity:0;transform:translate(-50%,-78px) scale(1.08)}}
+
+/* ===== 弹层 ===== */
+.sheet{position:fixed;inset:0;background:rgba(10,25,40,.5);display:none;align-items:flex-end;z-index:70;backdrop-filter:blur(4px)}
+.sheet.on{display:flex}
+.panel{width:100%;background:var(--card);border-radius:28px 28px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:15px;animation:up .26s ease-out}
+@keyframes up{from{transform:translateY(46px);opacity:.5}to{transform:none;opacity:1}}
+.panel h2{margin:0;font-size:19px;font-weight:900}
+.lab{font-size:13px;font-weight:900;color:var(--sub)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow button{
+  min-height:44px;padding:0 16px;border-radius:15px;border:1.5px solid var(--line);background:var(--bg);
+  color:var(--sub);font-size:14px;font-weight:800;cursor:pointer
+}
+.btnrow button[aria-pressed="true"]{background:linear-gradient(150deg,var(--sky),var(--sky-deep));border-color:var(--sky);color:#fff}
+.stat{font-size:14px;color:var(--sub);line-height:1.95;font-weight:800}
+.stat b{color:var(--sky-deep);font-size:19px}
+html[data-theme="dark"] .stat b{color:var(--sky)}
+kbd{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:2px 7px;font-size:12px;color:var(--sub)}
+@media (min-width:760px){
+  .topbar,.prog,.tabs,.chips,main,footer{max-width:520px;margin-left:auto;margin-right:auto;width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🦈</div>
+  <div class="title">医学英语斩词</div>
+  <div class="pill">今日 <b id="todayN">0</b>/<span id="goalN">20</span></div>
+  <button class="tool" id="statsBtn">📊</button>
+  <button class="tool" id="setBtn">⚙️</button>
+</div>
+
+<div class="prog">
+  <div class="track"><i id="bar"></i></div>
+  <div class="meta"><span id="posLabel">1 / 248</span><span id="unitLabel">全部单元</span></div>
+</div>
+
+<div class="tabs" id="modeBar">
+  <button data-mode="card" aria-pressed="true">背词</button>
+  <button data-mode="choice" aria-pressed="false">选义</button>
+  <button data-mode="spell" aria-pressed="false">拼写</button>
+  <button data-mode="cloze" aria-pressed="false">填空</button>
+</div>
+
+<div class="chips" id="scopeBar">
+  <button class="chip" data-scope="all" aria-pressed="true">全部</button>
+  <button class="chip" data-scope="wrong" aria-pressed="false">错题 <span class="n" id="wrongN">0</span></button>
+  <button class="chip" data-scope="star" aria-pressed="false">收藏 <span class="n" id="starN">0</span></button>
+</div>
+<div class="chips" id="unitBar"></div>
+
+<main><div class="card" id="card"></div></main>
+
+<footer id="actBar"></footer>
+
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+
+<script>
+const DATA = [{"id":0,"u":1,"t":"A doctor’s life","p":"neuron / neuronal overload","c":"神经过载","a":"neuron / neuronal","s":""},{"id":1,"u":1,"t":"A doctor’s life","p":"typical office visit","c":"典型的诊所就诊","a":"visit","s":""},{"id":2,"u":1,"t":"A doctor’s life","p":"DEXA scan","c":"双能X线吸收扫描","a":"scan","s":""},{"id":3,"u":1,"t":"A doctor’s life","p":"medical practice","c":"行医","a":"practice","s":""},{"id":4,"u":1,"t":"A doctor’s life","p":"health maintenance","c":"健康保持","a":"maintenance","s":""},{"id":5,"u":1,"t":"A doctor’s life","p":"PAP smear","c":"巴氏涂片实验","a":"smear","s":""},{"id":6,"u":1,"t":"A doctor’s life","p":"mammogram report","c":"乳房X线检查报告","a":"mammogram","s":""},{"id":7,"u":1,"t":"A doctor’s life","p":"refill a(n) prescription","c":"根据处方再配药","a":"prescription","s":""},{"id":8,"u":1,"t":"A doctor’s life","p":"physical examination","c":"体检","a":"physical","s":""},{"id":9,"u":1,"t":"A doctor’s life","p":"perpetual panic","c":"永久的恐慌","a":"panic","s":""},{"id":10,"u":1,"t":"A doctor’s life","p":"practicing physician","c":"执业医生","a":"practicing","s":""},{"id":11,"u":1,"t":"A doctor’s life","p":"paracetamol tablet","c":"扑热息痛药片","a":"tablet","s":""},{"id":12,"u":1,"t":"A doctor’s life","p":"childproof cap","c":"防孩子打开的盖子","a":"childproof","s":""},{"id":13,"u":1,"t":"A doctor’s life","p":"randomized clinical trial","c":"随机临床试验","a":"randomized","s":""},{"id":14,"u":1,"t":"A doctor’s life","p":"random allocation","c":"随机分配","a":"allocation","s":""},{"id":15,"u":1,"t":"A doctor’s life","p":"patient prognosis","c":"病人的预后","a":"","s":""},{"id":16,"u":1,"t":"A doctor’s life","p":"control group","c":"对照组","a":"","s":""},{"id":17,"u":1,"t":"A doctor’s life","p":"a 10-year follow-up study","c":"10年的跟踪研究","a":"","s":""},{"id":18,"u":1,"t":"A doctor’s life","p":"medical ward","c":"内科病房","a":"ward","s":""},{"id":19,"u":1,"t":"A doctor’s life","p":"infectious hepatitis","c":"传染性肝炎","a":"hepatitis","s":""},{"id":20,"u":1,"t":"A doctor’s life","p":"severe malaise","c":"身体严重不适","a":"malaise","s":""},{"id":21,"u":1,"t":"A doctor’s life","p":"bilirubin metabolism","c":"胆红素代谢","a":"metabolism","s":""},{"id":22,"u":1,"t":"A doctor’s life","p":"permanent liver damage","c":"永久性肝损伤","a":"liver","s":""},{"id":23,"u":1,"t":"A doctor’s life","p":"exacerbate pathophysiology","c":"加重病理生理状况","a":"pathophysiology","s":""},{"id":24,"u":1,"t":"A doctor’s life","p":"medical literature","c":"医学文献","a":"literature","s":""},{"id":25,"u":1,"t":"A doctor’s life","p":"clinical investigation","c":"临床调查","a":"investigation","s":""},{"id":26,"u":1,"t":"A doctor’s life","p":"incidence of relapse","c":"复发率","a":"incidence","s":""},{"id":27,"u":1,"t":"A doctor’s life","p":"clinical epidemiology","c":"临床流行病学","a":"epidemiology","s":""},{"id":28,"u":1,"t":"A doctor’s life","p":"strict bed rest","c":"严格的卧床休息","a":"bed rest","s":""},{"id":29,"u":1,"t":"A doctor’s life","p":"hospital stay","c":"住院","a":"stay","s":""},{"id":30,"u":1,"t":"A doctor’s life","p":"recurrent jaundice","c":"反复发作的黄疸","a":"jaundice","s":""},{"id":31,"u":1,"t":"A doctor’s life","p":"clinical course","c":"临床病程","a":"course","s":""},{"id":32,"u":1,"t":"A doctor’s life","p":"intravenous morphine","c":"静脉注射吗啡","a":"intravenous","s":""},{"id":33,"u":1,"t":"A doctor’s life","p":"diastolic blood pressure","c":"舒张压","a":"diastolic","s":""},{"id":34,"u":1,"t":"A doctor’s life","p":"brain perfusion","c":"脑血流灌注","a":"perfusion","s":""},{"id":35,"u":1,"t":"A doctor’s life","p":"primary care","c":"初级保健","a":"primary","s":""},{"id":36,"u":1,"t":"A doctor’s life","p":"aorto-coronary arterial bypass","c":"主动脉冠状动脉旁路","a":"bypass","s":""},{"id":37,"u":1,"t":"A doctor’s life","p":"informed treatment decision","c":"知情治疗决定","a":"informed","s":""},{"id":38,"u":2,"t":"Resurgent and emergent diseases","p":"re-emerging / re-emergent / resurgent disease","c":"再现疾病","a":"re-emerging / re-emergent / resurgent","s":""},{"id":39,"u":2,"t":"Resurgent and emergent diseases","p":"new flu strain","c":"新流感变种","a":"strain","s":""},{"id":40,"u":2,"t":"Resurgent and emergent diseases","p":"antibiotic and vaccine","c":"抗生素和疫苗","a":"vaccine","s":"antibiotic and __BLANK__"},{"id":41,"u":2,"t":"Resurgent and emergent diseases","p":"scarlet fever","c":"猩红热","a":"scarlet","s":"__BLANK__ fever"},{"id":42,"u":2,"t":"Resurgent and emergent diseases","p":"infectious disease","c":"传染病","a":"infectious","s":"__BLANK__ disease"},{"id":43,"u":2,"t":"Resurgent and emergent diseases","p":"emerging / emergent disease","c":"新现疾病","a":"emerging / emergent","s":"__BLANK__ disease"},{"id":44,"u":2,"t":"Resurgent and emergent diseases","p":"prevention strategy","c":"预防策略","a":"prevention","s":"__BLANK__ strategy"},{"id":45,"u":2,"t":"Resurgent and emergent diseases","p":"bubonic plague","c":"腺鼠疫","a":"plague","s":"bubonic __BLANK__"},{"id":46,"u":2,"t":"Resurgent and emergent diseases","p":"pathogenic microbe","c":"病原微生物","a":"pathogenic","s":"__BLANK__ microbe"},{"id":47,"u":2,"t":"Resurgent and emergent diseases","p":"drug resistance","c":"抗药性","a":"resistance","s":"drug __BLANK__"},{"id":48,"u":2,"t":"Resurgent and emergent diseases","p":"course of antibiotic therapy","c":"抗生素治疗疗程","a":"course","s":"__BLANK__ of antibiotic therapy"},{"id":49,"u":2,"t":"Resurgent and emergent diseases","p":"level of virulence","c":"毒性水平","a":"virulence","s":"level of __BLANK__"},{"id":50,"u":2,"t":"Resurgent and emergent diseases","p":"flu pandemic","c":"流感大流行","a":"pandemic","s":"flu __BLANK__"},{"id":51,"u":2,"t":"Resurgent and emergent diseases","p":"surface antigen","c":"表面抗原","a":"antigen","s":"surface __BLANK__"},{"id":52,"u":2,"t":"Resurgent and emergent diseases","p":"immune system","c":"免疫系统","a":"immune","s":"__BLANK__ system"},{"id":53,"u":2,"t":"Resurgent and emergent diseases","p":"genetic shift","c":"基因改变","a":"genetic","s":"__BLANK__ shift"},{"id":54,"u":2,"t":"Resurgent and emergent diseases","p":"public health infrastructure","c":"公共卫生基础设施","a":"infrastructure","s":"public health __BLANK__"},{"id":55,"u":2,"t":"Resurgent and emergent diseases","p":"malaria case","c":"疟疾病例","a":"case","s":"malaria __BLANK__"},{"id":56,"u":2,"t":"Resurgent and emergent diseases","p":"swine flu","c":"猪流感","a":"swine","s":"__BLANK__ flu"},{"id":57,"u":2,"t":"Resurgent and emergent diseases","p":"tuberculosis bacillus","c":"结核杆菌","a":"tuberculosis","s":"__BLANK__ bacillus"},{"id":58,"u":2,"t":"Resurgent and emergent diseases","p":"level of morbidity / incidence","c":"发病率水平","a":"morbidity / incidence","s":"level of __BLANK__"},{"id":59,"u":2,"t":"Resurgent and emergent diseases","p":"health professional","c":"保健专业人士","a":"professional","s":"health __BLANK__"},{"id":60,"u":2,"t":"Resurgent and emergent diseases","p":"latent tuberculosis","c":"潜伏结核病","a":"latent","s":"__BLANK__ tuberculosis"},{"id":61,"u":2,"t":"Resurgent and emergent diseases","p":"tuberculin skin test","c":"结核素皮试","a":"tuberculin","s":"__BLANK__ skin test"},{"id":62,"u":2,"t":"Resurgent and emergent diseases","p":"screening program","c":"筛查计划","a":"screening","s":"__BLANK__ program"},{"id":63,"u":2,"t":"Resurgent and emergent diseases","p":"interferon gamma test","c":"γ 干扰素测试","a":"interferon","s":"__BLANK__ gamma test"},{"id":64,"u":2,"t":"Resurgent and emergent diseases","p":"drug toxicity","c":"药物毒性","a":"toxicity","s":"drug __BLANK__"},{"id":65,"u":2,"t":"Resurgent and emergent diseases","p":"curable disease","c":"可治愈的病","a":"curable","s":"__BLANK__ disease"},{"id":66,"u":3,"t":"Prevention and treatment of diseases","p":"surge of adrenaline","c":"肾上腺素激增","a":"adrenaline","s":"surge of __BLANK__"},{"id":67,"u":3,"t":"Prevention and treatment of diseases","p":"internal medicine residency","c":"内科实习期","a":"residency","s":"internal medicine __BLANK__"},{"id":68,"u":3,"t":"Prevention and treatment of diseases","p":"autoimmune disease","c":"自身免疫疾病","a":"autoimmune","s":"__BLANK__ disease"},{"id":69,"u":3,"t":"Prevention and treatment of diseases","p":"loss of stamina","c":"丧失耐力","a":"stamina","s":"loss of __BLANK__"},{"id":70,"u":3,"t":"Prevention and treatment of diseases","p":"transient weakness","c":"短暂的虚弱","a":"transient","s":"__BLANK__ weakness"},{"id":71,"u":3,"t":"Prevention and treatment of diseases","p":"become bedridden","c":"卧床不起","a":"bedridden","s":"become __BLANK__"},{"id":72,"u":3,"t":"Prevention and treatment of diseases","p":"building block","c":"基本构件","a":"block","s":"building __BLANK__"},{"id":73,"u":3,"t":"Prevention and treatment of diseases","p":"animal model","c":"动物模型","a":"model","s":"animal __BLANK__"},{"id":74,"u":3,"t":"Prevention and treatment of diseases","p":"slow neurodegeneration","c":"减缓神经退化","a":"neurodegeneration","s":"slow __BLANK__"},{"id":75,"u":3,"t":"Prevention and treatment of diseases","p":"excrete toxin","c":"排除毒素","a":"excrete","s":"__BLANK__ toxin"},{"id":76,"u":3,"t":"Prevention and treatment of diseases","p":"optimize nutrition","c":"优化营养","a":"optimize","s":"__BLANK__ nutrition"},{"id":77,"u":3,"t":"Prevention and treatment of diseases","p":"food allergy","c":"食物过敏","a":"allergy","s":"food __BLANK__"},{"id":78,"u":3,"t":"Prevention and treatment of diseases","p":"toxic load","c":"毒素载量","a":"load","s":"toxic __BLANK__"},{"id":79,"u":3,"t":"Prevention and treatment of diseases","p":"risk of relapse","c":"复发危险","a":"relapse","s":"risk of __BLANK__"},{"id":80,"u":3,"t":"Prevention and treatment of diseases","p":"physician self-experimentation","c":"医生自我实验","a":"self-experimentation","s":"physician __BLANK__"},{"id":81,"u":3,"t":"Prevention and treatment of diseases","p":"clinical trial","c":"临床试验","a":"trial","s":"clinical __BLANK__"},{"id":82,"u":3,"t":"Prevention and treatment of diseases","p":"neuromuscular electrical stimulation","c":"神经肌肉电刺激","a":"neuromuscular","s":"__BLANK__ electrical stimulation"},{"id":83,"u":3,"t":"Prevention and treatment of diseases","p":"physical therapist","c":"理疗师","a":"therapist","s":"physical __BLANK__"},{"id":84,"u":3,"t":"Prevention and treatment of diseases","p":"impact of micronutrient","c":"微量营养素的影响","a":"micronutrient","s":"impact of __BLANK__"},{"id":85,"u":3,"t":"Prevention and treatment of diseases","p":"brain function","c":"脑功能","a":"function","s":"brain __BLANK__"},{"id":86,"u":3,"t":"Prevention and treatment of diseases","p":"amino acid","c":"氨基酸","a":"amino","s":"__BLANK__ acid"},{"id":87,"u":3,"t":"Prevention and treatment of diseases","p":"medical literature","c":"医学文献","a":"literature","s":"medical __BLANK__"},{"id":88,"u":3,"t":"Prevention and treatment of diseases","p":"registered dietician","c":"注册营养师","a":"dietician","s":"registered __BLANK__"},{"id":89,"u":3,"t":"Prevention and treatment of diseases","p":"neurological and psychological symptom","c":"神经和心理症状","a":"neurological","s":"__BLANK__ and psychological symptom"},{"id":90,"u":3,"t":"Prevention and treatment of diseases","p":"abdominal complaints","c":"腹部不适","a":"complaints","s":"abdominal __BLANK__"},{"id":91,"u":3,"t":"Prevention and treatment of diseases","p":"pesticide and herbicide","c":"杀虫剂和除草剂","a":"herbicide","s":"pesticide and __BLANK__"},{"id":92,"u":3,"t":"Prevention and treatment of diseases","p":"practice medicine","c":"行医","a":"practice","s":"__BLANK__ medicine"},{"id":93,"u":3,"t":"Prevention and treatment of diseases","p":"blood pressure","c":"血压","a":"pressure","s":"blood __BLANK__"},{"id":94,"u":3,"t":"Prevention and treatment of diseases","p":"IRB-approved protocol","c":"机构审查委员会批准的方案","a":"protocol","s":"IRB-approved __BLANK__"},{"id":95,"u":3,"t":"Prevention and treatment of diseases","p":"secondary progressive multiple sclerosis","c":"继发进展型多发性硬化","a":"progressive","s":"secondary __BLANK__ multiple sclerosis"},{"id":96,"u":3,"t":"Prevention and treatment of diseases","p":"traditional domain","c":"传统领域","a":"domain","s":"traditional __BLANK__"},{"id":97,"u":3,"t":"Prevention and treatment of diseases","p":"social media","c":"社交媒体","a":"media","s":"social __BLANK__"},{"id":98,"u":3,"t":"Prevention and treatment of diseases","p":"increasing ubiquity","c":"越来越无处不在","a":"ubiquity","s":"increasing __BLANK__"},{"id":99,"u":3,"t":"Prevention and treatment of diseases","p":"electronic medical record","c":"电子病历","a":"record","s":"electronic medical __BLANK__"},{"id":100,"u":3,"t":"Prevention and treatment of diseases","p":"over-the-counter medication","c":"非处方药","a":"over-the-counter","s":"__BLANK__ medication"},{"id":101,"u":3,"t":"Prevention and treatment of diseases","p":"real-time surveillance","c":"实时监控","a":"surveillance","s":"real-time __BLANK__"},{"id":102,"u":3,"t":"Prevention and treatment of diseases","p":"closely correlated","c":"紧密相关","a":"correlated","s":"closely __BLANK__"},{"id":103,"u":3,"t":"Prevention and treatment of diseases","p":"allergic conjunctivitis","c":"过敏性结膜炎","a":"allergic","s":"__BLANK__ conjunctivitis"},{"id":104,"u":3,"t":"Prevention and treatment of diseases","p":"search term","c":"搜索词","a":"search","s":"__BLANK__ term"},{"id":105,"u":3,"t":"Prevention and treatment of diseases","p":"seasonality of disease","c":"疾病的季节性","a":"seasonality","s":"__BLANK__ of disease"},{"id":106,"u":3,"t":"Prevention and treatment of diseases","p":"severe acute respiratory syndrome","c":"重症急性呼吸综合征","a":"respiratory","s":"severe acute __BLANK__ syndrome"},{"id":107,"u":3,"t":"Prevention and treatment of diseases","p":"crude algorithm","c":"简陋算法","a":"algorithm","s":"crude __BLANK__"},{"id":108,"u":3,"t":"Prevention and treatment of diseases","p":"bioterrorist attack","c":"生物恐怖袭击","a":"bioterrorist","s":"__BLANK__ attack"},{"id":109,"u":3,"t":"Prevention and treatment of diseases","p":"mosquito control","c":"蚊虫防控","a":"mosquito","s":"__BLANK__ control"},{"id":110,"u":4,"t":"Alternative medicine","p":"complementary medicine","c":"补充医学","a":"complementary","s":"__BLANK__ medicine"},{"id":111,"u":4,"t":"Alternative medicine","p":"alternative medicine","c":"替代医学","a":"alternative","s":"__BLANK__ medicine"},{"id":112,"u":4,"t":"Alternative medicine","p":"medical paradigm","c":"医疗模式","a":"paradigm","s":"medical __BLANK__"},{"id":113,"u":4,"t":"Alternative medicine","p":"acupuncture and herb","c":"针刺和草药","a":"acupuncture","s":"__BLANK__ and herb"},{"id":114,"u":4,"t":"Alternative medicine","p":"adjunct treatment","c":"辅助治疗","a":"adjunct","s":"__BLANK__ treatment"},{"id":115,"u":4,"t":"Alternative medicine","p":"nausea and vomiting","c":"恶心和呕吐","a":"nausea","s":"__BLANK__ and vomiting"},{"id":116,"u":4,"t":"Alternative medicine","p":"post-operative dental pain","c":"术后牙痛","a":"post-operative","s":"__BLANK__ dental pain"},{"id":117,"u":4,"t":"Alternative medicine","p":"clinical trial","c":"临床试验","a":"clinical","s":"__BLANK__ trial"},{"id":118,"u":4,"t":"Alternative medicine","p":"physical therapy","c":"物理疗法；理疗","a":"physical","s":"__BLANK__ therapy"},{"id":119,"u":4,"t":"Alternative medicine","p":"therapeutic modality","c":"治疗方法","a":"therapeutic","s":"__BLANK__ modality"},{"id":120,"u":4,"t":"Alternative medicine","p":"therapeutic intervention","c":"治疗干预","a":"intervention","s":"therapeutic __BLANK__"},{"id":121,"u":4,"t":"Alternative medicine","p":"research design","c":"研究设计","a":"design","s":"research __BLANK__"},{"id":122,"u":4,"t":"Alternative medicine","p":"magnetic resonance","c":"磁共振","a":"resonance","s":"magnetic __BLANK__"},{"id":123,"u":4,"t":"Alternative medicine","p":"positron emission tomography","c":"正电子发射体层摄影［术］","a":"emission","s":"positron __BLANK__ tomography"},{"id":124,"u":4,"t":"Alternative medicine","p":"analgesia effect","c":"止痛效果","a":"analgesia","s":"__BLANK__ effect"},{"id":125,"u":4,"t":"Alternative medicine","p":"biomedical establishment","c":"生物医学界","a":"establishment","s":"biomedical __BLANK__"},{"id":126,"u":4,"t":"Alternative medicine","p":"rehabilitation unit","c":"康复中心","a":"rehabilitation","s":"__BLANK__ unit"},{"id":127,"u":4,"t":"Alternative medicine","p":"therapeutic strategy","c":"治疗策略","a":"strategy","s":"therapeutic __BLANK__"},{"id":128,"u":4,"t":"Alternative medicine","p":"herbal formula","c":"草药配方","a":"formula","s":"herbal __BLANK__"},{"id":129,"u":4,"t":"Alternative medicine","p":"a wide array of complications","c":"各式各样的并发症","a":"array","s":"a wide __BLANK__ of complications"},{"id":130,"u":4,"t":"Alternative medicine","p":"integrative East-West medicine","c":"中西医结合","a":"integrative","s":"__BLANK__ East-West medicine"},{"id":131,"u":4,"t":"Alternative medicine","p":"acute abdominal pain","c":"急性腹痛","a":"acute","s":"__BLANK__ abdominal pain"},{"id":132,"u":4,"t":"Alternative medicine","p":"administer medicine","c":"施药；用药","a":"administer","s":"__BLANK__ medicine"},{"id":133,"u":4,"t":"Alternative medicine","p":"surgical procedure","c":"外科手术","a":"procedure","s":"surgical __BLANK__"},{"id":134,"u":4,"t":"Alternative medicine","p":"scientific evaluation","c":"科学评估","a":"evaluation","s":"scientific __BLANK__"},{"id":135,"u":4,"t":"Alternative medicine","p":"prevalence statistics","c":"患病率统计","a":"prevalence","s":"__BLANK__ statistics"},{"id":136,"u":4,"t":"Alternative medicine","p":"plausible mechanism","c":"合理的机制","a":"plausible","s":"__BLANK__ mechanism"},{"id":137,"u":4,"t":"Alternative medicine","p":"conventional therapy","c":"传统疗法","a":"conventional","s":"__BLANK__ therapy"},{"id":138,"u":4,"t":"Alternative medicine","p":"evidence-based model of care","c":"循证医疗模式","a":"evidence-based","s":"__BLANK__ model of care"},{"id":139,"u":4,"t":"Alternative medicine","p":"stress management","c":"压力处理","a":"management","s":"stress __BLANK__"},{"id":140,"u":4,"t":"Alternative medicine","p":"peripheral nervous system","c":"周围神经系统","a":"peripheral","s":"__BLANK__ nervous system"},{"id":141,"u":4,"t":"Alternative medicine","p":"physiologic mechanism","c":"生理机制","a":"mechanism","s":"physiologic __BLANK__"},{"id":142,"u":4,"t":"Alternative medicine","p":"mechanistic and reductionistic study","c":"机制和还原式研究","a":"reductionistic","s":"mechanistic and __BLANK__ study"},{"id":143,"u":4,"t":"Alternative medicine","p":"cost-effectiveness research","c":"效益研究","a":"cost-effectiveness","s":"__BLANK__ research"},{"id":144,"u":4,"t":"Alternative medicine","p":"clinical outcome","c":"临床结果","a":"outcome","s":"clinical __BLANK__"},{"id":145,"u":4,"t":"Alternative medicine","p":"preclinical and clinical study","c":"临床前及临床研究","a":"preclinical","s":"__BLANK__ and clinical study"},{"id":146,"u":5,"t":"Healthy living","p":"incidence of chronic disease","c":"慢性疾病的发病率","a":"incidence","s":"__BLANK__ of chronic disease"},{"id":147,"u":5,"t":"Healthy living","p":"prevalence of chronic disease","c":"慢性疾病的患病率","a":"prevalence","s":"__BLANK__ of chronic disease"},{"id":148,"u":5,"t":"Healthy living","p":"metabolic disease","c":"代谢性疾病","a":"metabolic","s":"__BLANK__ disease"},{"id":149,"u":5,"t":"Healthy living","p":"optimal therapeutic dosage","c":"最佳治疗剂量","a":"therapeutic","s":"optimal __BLANK__ dosage"},{"id":150,"u":5,"t":"Healthy living","p":"unhealthy living phenotype","c":"不健康的生活表型","a":"phenotype","s":"unhealthy living __BLANK__"},{"id":151,"u":5,"t":"Healthy living","p":"physical inactivity","c":"体能活动不足","a":"inactivity","s":"physical __BLANK__"},{"id":152,"u":5,"t":"Healthy living","p":"primary prevention","c":"初级预防","a":"primary","s":"__BLANK__ prevention"},{"id":153,"u":5,"t":"Healthy living","p":"prescription medication","c":"处方药","a":"prescription","s":"__BLANK__ medication"},{"id":154,"u":5,"t":"Healthy living","p":"alleviation of disease","c":"疾病的缓解","a":"alleviation","s":"__BLANK__ of disease"},{"id":155,"u":5,"t":"Healthy living","p":"precision medicine","c":"精准医学","a":"precision","s":"__BLANK__ medicine"},{"id":156,"u":5,"t":"Healthy living","p":"sedentary lifestyle","c":"久坐不动的生活方式","a":"sedentary","s":"__BLANK__ lifestyle"},{"id":157,"u":5,"t":"Healthy living","p":"decaying teeth","c":"蛀牙","a":"decaying","s":"__BLANK__ teeth"},{"id":158,"u":5,"t":"Healthy living","p":"nutrition professor","c":"营养教授","a":"nutrition","s":"__BLANK__ professor"},{"id":159,"u":5,"t":"Healthy living","p":"burgeoning waistline","c":"迅速膨胀的腰围","a":"waistline","s":"burgeoning __BLANK__"},{"id":160,"u":5,"t":"Healthy living","p":"bottled water","c":"瓶装水","a":"bottled","s":"__BLANK__ water"},{"id":161,"u":5,"t":"Healthy living","p":"caloric intake","c":"热量摄入","a":"intake","s":"caloric __BLANK__"},{"id":162,"u":5,"t":"Healthy living","p":"curb appetite","c":"节制食欲","a":"appetite","s":"curb __BLANK__"},{"id":163,"u":5,"t":"Healthy living","p":"grain and protein","c":"谷物和蛋白质","a":"protein","s":"grain and __BLANK__"},{"id":164,"u":5,"t":"Healthy living","p":"quality of life","c":"生活质量","a":"quality","s":"__BLANK__ of life"},{"id":165,"u":6,"t":"Life and medicine","p":"nursing home","c":"养老院；疗养院","a":"nursing","s":"__BLANK__ home"},{"id":166,"u":6,"t":"Life and medicine","p":"hospice care","c":"善终医护","a":"hospice","s":"__BLANK__ care"},{"id":167,"u":6,"t":"Life and medicine","p":"congestive heart failure","c":"充血性心力衰竭","a":"failure","s":"congestive heart __BLANK__"},{"id":168,"u":6,"t":"Life and medicine","p":"available around the clock","c":"24小时随叫随到","a":"around the clock","s":"available __BLANK__"},{"id":169,"u":6,"t":"Life and medicine","p":"coronary care unit","c":"冠心病监护病房","a":"coronary","s":"__BLANK__ care unit"},{"id":170,"u":6,"t":"Life and medicine","p":"respond to treatment","c":"对治疗有反应","a":"respond","s":"__BLANK__ to treatment"},{"id":171,"u":6,"t":"Life and medicine","p":"skilled nursing facility","c":"专业护理机构","a":"facility","s":"skilled nursing __BLANK__"},{"id":172,"u":6,"t":"Life and medicine","p":"end-of-life care","c":"生命终末期护理","a":"end-of-life","s":"__BLANK__ care"},{"id":173,"u":6,"t":"Life and medicine","p":"comfort care","c":"舒适护理","a":"comfort","s":"__BLANK__ care"},{"id":174,"u":6,"t":"Life and medicine","p":"hospital discharge planner","c":"出院计划专员","a":"discharge","s":"hospital __BLANK__ planner"},{"id":175,"u":6,"t":"Life and medicine","p":"symptom care","c":"症状护理","a":"care","s":"symptom __BLANK__"},{"id":176,"u":6,"t":"Life and medicine","p":"palliative care","c":"姑息疗法","a":"palliative","s":"__BLANK__ care"},{"id":177,"u":6,"t":"Life and medicine","p":"fatal illness","c":"绝症","a":"fatal","s":"__BLANK__ illness"},{"id":178,"u":6,"t":"Life and medicine","p":"chronic obstructive pulmonary disease","c":"慢性阻塞性肺病","a":"pulmonary","s":"chronic obstructive __BLANK__ disease"},{"id":179,"u":6,"t":"Life and medicine","p":"experimental treatment","c":"实验性治疗","a":"experimental","s":"__BLANK__ treatment"},{"id":180,"u":6,"t":"Life and medicine","p":"spiritual advisor","c":"精神顾问","a":"advisor","s":"spiritual __BLANK__"},{"id":181,"u":6,"t":"Life and medicine","p":"discontinue all treatment","c":"终止所有治疗","a":"discontinue","s":"__BLANK__ all treatment"},{"id":182,"u":6,"t":"Life and medicine","p":"go through dialysis","c":"经历透析","a":"dialysis","s":"go through __BLANK__"},{"id":183,"u":6,"t":"Life and medicine","p":"PAP smear","c":"巴氏涂片试验","a":"smear","s":"PAP __BLANK__"},{"id":184,"u":6,"t":"Life and medicine","p":"patient-provider relationship","c":"医患关系","a":"provider","s":"patient-__BLANK__ relationship"},{"id":185,"u":6,"t":"Life and medicine","p":"provide care-as-usual","c":"提供惯常医护","a":"care-as-usual","s":"provide __BLANK__"},{"id":186,"u":6,"t":"Life and medicine","p":"preventive examination","c":"预防性检查","a":"preventive","s":"__BLANK__ examination"},{"id":187,"u":6,"t":"Life and medicine","p":"off the beaten path","c":"离开熟路；另辟蹊径","a":"beaten","s":"off the __BLANK__ path"},{"id":188,"u":6,"t":"Life and medicine","p":"mold into a shape","c":"塑形","a":"mold","s":"__BLANK__ into a shape"},{"id":189,"u":6,"t":"Life and medicine","p":"renew / refill a prescription","c":"照旧处方再开药","a":"renew / refill","s":"__BLANK__ a prescription"},{"id":190,"u":7,"t":"Doctor-patient relationship","p":"nursing station","c":"护士站","a":"station","s":"nursing __BLANK__"},{"id":191,"u":7,"t":"Doctor-patient relationship","p":"life-support machine","c":"呼吸机","a":"life-support","s":"__BLANK__ machine"},{"id":192,"u":7,"t":"Doctor-patient relationship","p":"comfort measure","c":"舒适护理措施","a":"measure","s":"comfort __BLANK__"},{"id":193,"u":7,"t":"Doctor-patient relationship","p":"withdraw treatment","c":"停止治疗","a":"withdraw","s":"__BLANK__ treatment"},{"id":194,"u":7,"t":"Doctor-patient relationship","p":"paternalistic decision-making process","c":"家长式决策程序","a":"paternalistic","s":"__BLANK__ decision-making process"},{"id":195,"u":7,"t":"Doctor-patient relationship","p":"patient empowerment","c":"病人授权","a":"empowerment","s":"patient __BLANK__"},{"id":196,"u":7,"t":"Doctor-patient relationship","p":"medical ethicist","c":"医学伦理学家","a":"ethicist","s":"medical __BLANK__"},{"id":197,"u":7,"t":"Doctor-patient relationship","p":"ethical principle","c":"伦理准则","a":"principle","s":"ethical __BLANK__"},{"id":198,"u":7,"t":"Doctor-patient relationship","p":"clinical ideal","c":"临床理念","a":"ideal","s":"clinical __BLANK__"},{"id":199,"u":7,"t":"Doctor-patient relationship","p":"patient-centered care","c":"以病人为中心的护理","a":"patient-centered","s":"__BLANK__ care"},{"id":200,"u":7,"t":"Doctor-patient relationship","p":"patient autonomy","c":"病人自主权","a":"autonomy","s":"patient __BLANK__"},{"id":201,"u":7,"t":"Doctor-patient relationship","p":"treatment option","c":"治疗选择","a":"option","s":"treatment __BLANK__"},{"id":202,"u":7,"t":"Doctor-patient relationship","p":"exclusive purview","c":"专属领域","a":"exclusive","s":"__BLANK__ purview"},{"id":203,"u":7,"t":"Doctor-patient relationship","p":"emergency decision","c":"紧急状况下做的决定","a":"emergency","s":"__BLANK__ decision"},{"id":204,"u":7,"t":"Doctor-patient relationship","p":"physician restraint","c":"对医生的限制","a":"restraint","s":"physician __BLANK__"},{"id":205,"u":7,"t":"Doctor-patient relationship","p":"anxiety and confusion","c":"焦虑与困惑","a":"anxiety","s":"__BLANK__ and confusion"},{"id":206,"u":7,"t":"Doctor-patient relationship","p":"ethical transgression","c":"违背伦理","a":"transgression","s":"ethical __BLANK__"},{"id":207,"u":7,"t":"Doctor-patient relationship","p":"family practice","c":"家庭医疗","a":"practice","s":"family __BLANK__"},{"id":208,"u":7,"t":"Doctor-patient relationship","p":"widespread metastases","c":"广泛转移","a":"metastases","s":"widespread __BLANK__"},{"id":209,"u":7,"t":"Doctor-patient relationship","p":"aggressive treatment","c":"积极治疗","a":"aggressive","s":"__BLANK__ treatment"},{"id":210,"u":7,"t":"Doctor-patient relationship","p":"primary lesion","c":"原发病灶","a":"primary","s":"__BLANK__ lesion"},{"id":211,"u":7,"t":"Doctor-patient relationship","p":"recommend follow-up","c":"建议随访","a":"follow-up","s":"recommend __BLANK__"},{"id":212,"u":7,"t":"Doctor-patient relationship","p":"electronic record","c":"电子病历","a":"record","s":"electronic __BLANK__"},{"id":213,"u":7,"t":"Doctor-patient relationship","p":"pulmonary emboli","c":"肺栓塞","a":"emboli","s":"pulmonary __BLANK__"},{"id":214,"u":7,"t":"Doctor-patient relationship","p":"computerized tomography","c":"CT，计算机断层扫描","a":"tomography","s":"computerized __BLANK__"},{"id":215,"u":7,"t":"Doctor-patient relationship","p":"bilateral infiltrates","c":"双侧浸润","a":"infiltrates","s":"bilateral __BLANK__"},{"id":216,"u":7,"t":"Doctor-patient relationship","p":"chest X-ray","c":"X线胸片","a":"chest","s":"__BLANK__ X-ray"},{"id":217,"u":7,"t":"Doctor-patient relationship","p":"left lower-lobe pneumonia","c":"左肺下叶肺炎","a":"lower-lobe","s":"left __BLANK__ pneumonia"},{"id":218,"u":7,"t":"Doctor-patient relationship","p":"labored breathing","c":"呼吸困难","a":"labored","s":"__BLANK__ breathing"},{"id":219,"u":7,"t":"Doctor-patient relationship","p":"hospice team","c":"善终医护团队","a":"team","s":"hospice __BLANK__"},{"id":220,"u":8,"t":"Principles of biomedical ethics","p":"human subject","c":"研究中的人类受试者","a":"subject","s":"human __BLANK__"},{"id":221,"u":8,"t":"Principles of biomedical ethics","p":"biomedical research","c":"生物医学研究","a":"biomedical","s":"__BLANK__ research"},{"id":222,"u":8,"t":"Principles of biomedical ethics","p":"accepted therapy","c":"公认的治疗","a":"therapy","s":"accepted __BLANK__"},{"id":223,"u":8,"t":"Principles of biomedical ethics","p":"formal protocol","c":"正式方案","a":"protocol","s":"formal __BLANK__"},{"id":224,"u":8,"t":"Principles of biomedical ethics","p":"principle of beneficence","c":"善行原则","a":"beneficence","s":"principle of __BLANK__"},{"id":225,"u":8,"t":"Principles of biomedical ethics","p":"principle of justice","c":"公正原则","a":"justice","s":"principle of __BLANK__"},{"id":226,"u":8,"t":"Principles of biomedical ethics","p":"autonomous agent","c":"有自主能力的行为者","a":"autonomous","s":"__BLANK__ agent"},{"id":227,"u":8,"t":"Principles of biomedical ethics","p":"diminished autonomy","c":"受损的自主权","a":"diminished","s":"__BLANK__ autonomy"},{"id":228,"u":8,"t":"Principles of biomedical ethics","p":"be exposed to risk of harm","c":"使……有受到伤害的风险","a":"exposed","s":"be __BLANK__ to risk of harm"},{"id":229,"u":8,"t":"Principles of biomedical ethics","p":"Hippocratic Oath","c":"希波克拉底誓言","a":"Oath","s":"Hippocratic __BLANK__"},{"id":230,"u":8,"t":"Principles of biomedical ethics","p":"fairness in distribution","c":"分配的公正性","a":"distribution","s":"fairness in __BLANK__"},{"id":231,"u":8,"t":"Principles of biomedical ethics","p":"informed consent","c":"知情同意","a":"consent","s":"informed __BLANK__"},{"id":232,"u":8,"t":"Principles of biomedical ethics","p":"fair procedure and outcome","c":"公正的程序和结果","a":"procedure","s":"fair __BLANK__ and outcome"},{"id":233,"u":8,"t":"Principles of biomedical ethics","p":"operating table","c":"手术台","a":"operating","s":"__BLANK__ table"},{"id":234,"u":8,"t":"Principles of biomedical ethics","p":"ethical obligation","c":"伦理责任","a":"obligation","s":"ethical __BLANK__"},{"id":235,"u":8,"t":"Principles of biomedical ethics","p":"pediatric neurosurgeon","c":"儿科神经外科医生","a":"pediatric","s":"__BLANK__ neurosurgeon"},{"id":236,"u":8,"t":"Principles of biomedical ethics","p":"perform the surgery","c":"做手术","a":"perform","s":"__BLANK__ the surgery"},{"id":237,"u":8,"t":"Principles of biomedical ethics","p":"blood flow","c":"血流","a":"flow","s":"blood __BLANK__"},{"id":238,"u":8,"t":"Principles of biomedical ethics","p":"intensive care","c":"重症监护","a":"intensive","s":"__BLANK__ care"},{"id":239,"u":8,"t":"Principles of biomedical ethics","p":"adoptive father","c":"养父","a":"adoptive","s":"__BLANK__ father"},{"id":240,"u":8,"t":"Principles of biomedical ethics","p":"biological father","c":"生父","a":"biological","s":"__BLANK__ father"},{"id":241,"u":8,"t":"Principles of biomedical ethics","p":"psychological needs","c":"心理需要","a":"psychological","s":"__BLANK__ needs"},{"id":242,"u":8,"t":"Principles of biomedical ethics","p":"medical judgment","c":"医学判断","a":"medical","s":"__BLANK__ judgment"},{"id":243,"u":8,"t":"Principles of biomedical ethics","p":"occupational therapy","c":"职业疗法","a":"occupational","s":"__BLANK__ therapy"},{"id":244,"u":8,"t":"Principles of biomedical ethics","p":"contract meningitis","c":"感染脑膜炎","a":"contract","s":"__BLANK__ meningitis"},{"id":245,"u":8,"t":"Principles of biomedical ethics","p":"die of a(n) infection","c":"死于感染","a":"infection","s":"die of a(n) __BLANK__"},{"id":246,"u":8,"t":"Principles of biomedical ethics","p":"blood vessel","c":"血管","a":"vessel","s":"blood __BLANK__"},{"id":247,"u":8,"t":"Principles of biomedical ethics","p":"imbalance in circulation","c":"循环的不平衡","a":"circulation","s":"imbalance in __BLANK__"}];
+const KEY = 'medeng_bcz_v1';
+const UNIT = {1:['🩺','#BFE9FF','#E8F7FF','A doctor’s life'],2:['🦠','#CFE8FF','#E9F4FF','Resurgent diseases'],
+  3:['💊','#D8F0E0','#EAF8EE','Prevention & treatment'],4:['🌿','#D6F2D2','#EDFAE9','Alternative medicine'],
+  5:['🥗','#FFE9C0','#FFF5E4','Healthy living'],6:['❤️‍🩹','#FFD9DC','#FFEFF0','Life & medicine'],
+  7:['🤝','#E3DBFF','#EFEAFF','Doctor-patient'],8:['⚖️','#DDEAF7','#EEF5FC','Biomedical ethics']};
+const EMO_MAP = [['外科','🔪'],['手术','🔪'],['护士','👩⚕️'],['医生','👨‍️'],['医','🩺'],['药','💊'],['处方','📋'],
+  ['疫苗','💉'],['病毒','🦠'],['细菌','🦠'],['病','🏥'],['心脏','❤️'],['血','🩸'],['脑','🧠'],['肝','🫁'],
+  ['肺','🫁'],['牙','🦷'],['骨','🦴'],['老','👴'],['睡','😴'],['饮食','🥗'],['营养','🥗'],['水','💧'],
+  ['胖','⚖️'],['运动','🏃'],['压力','😰'],['焦虑','😟'],['健康','💪'],['免疫','🛡️'],['伦理','⚖️'],
+  ['同意','✍️'],['研究','🔬'],['试验','🧪'],['数据','📊'],['统计','📈'],['针灸','🪡'],['草','🌿'],
+  ['疗','💆'],['疼痛','😖'],['癌','🎗️'],['传染','☣️'],['护','🫶'],['衰','💔'],['监护','📟'],['临终','🕯️']];
+
+const mem = {};
+const LS = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return mem[k] ?? null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){ mem[k]=v; } },
+  del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
+};
+const S = JSON.parse(LS.get(KEY) || '{}');
+S.known=S.known||{}; S.wrong=S.wrong||{}; S.star=S.star||{}; S.day=S.day||{};
+S.mode=S.mode||'card'; S.scope=S.scope||'all'; S.unit=S.unit===undefined?0:S.unit;
+S.fs=S.fs||32; S.theme=S.theme||'light'; S.shuffle=!!S.shuffle; S.goal=S.goal||20;
+const save=()=>LS.set(KEY, JSON.stringify(S));
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=new Date().toISOString().slice(0,10);
+let deck=[], idx=0, judged=false, answered=null, optCache=null;
+
+function applyTheme(){
+  document.documentElement.dataset.theme=S.theme;
+  document.querySelector('meta[name=theme-color]').content=S.theme==='dark'?'#0D1520':'#00B2FF';
+  document.documentElement.style.setProperty('--fs',S.fs+'px');
+}
+function picEmoji(c){
+  const t=(c.c||'')+(c.p||'');
+  for(const [k,e] of EMO_MAP) if(t.includes(k)) return e;
+  return (UNIT[c.u]||['📘'])[0];
+}
+function speak(text){
+  try{ const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.9;
+    speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+}
+function toast(msg,kind){
+  const d=document.createElement('div'); d.className='toast'+(kind?' '+kind:''); d.textContent=msg;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),2200);
+}
+function buzz(ok){ try{ navigator.vibrate && navigator.vibrate(ok?14:[8,45,8]); }catch(e){} }
+function cheer(){
+  const d=document.createElement('div'); d.className='floatup'; d.textContent='+1 斩';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1050);
+}
+function buildDeck(){
+  let list=DATA.slice();
+  if(S.scope==='wrong') list=list.filter(x=>S.wrong[x.id]);
+  else if(S.scope==='star') list=list.filter(x=>S.star[x.id]);
+  if(S.scope==='all'&&S.unit) list=list.filter(x=>x.u===S.unit);
+  if(S.mode==='cloze'){
+    const f=list.filter(x=>x.s);
+    if(f.length) list=f;
+    else if(list.length){ S.mode='card'; save(); }
+  }
+  if(S.shuffle){ let r=Math.floor(Date.now()/86400000);
+    const rnd=()=>(r=(r*1103515245+12345)&0x7fffffff)/0x7fffffff;
+    list=list.slice().sort(()=>rnd()-.5); }
+  deck=list; idx=0; judged=false; answered=null; optCache=null;
+}
+const cur=()=>deck[idx]||null;
+const todayCount=()=>Object.values(S.day).reduce((a,b)=>a+b,0);
+function count(){ S.day[today]=(S.day[today]||0)+1; }
+
+function shell(c, inner, extra){
+  const u=UNIT[c.u]||['📘','#BFE9FF','#E8F7FF'];
+  return '<div class="pic" style="--c1:'+u[1]+';--c2:'+u[2]+'">'
+    + '<div class="utag">UNIT '+c.u+' · '+esc((u[3]||c.t||'').toUpperCase())+'</div>'
+    + '<div class="em">'+picEmoji(c)+'</div><div class="wm">斩</div>'
+    + '<button class="star" id="starBtn" aria-pressed="'+(!!S.star[c.id])+'">'+(S.star[c.id]?'★':'☆')+'</button></div>'
+    + '<div class="body">' + inner + (extra||'') + '</div>';
+}
+
+function render(){
+  const c=cur();
+  $('todayN').textContent=todayCount(); $('goalN').textContent=S.goal;
+  $('wrongN').textContent=Object.keys(S.wrong).length; $('starN').textContent=Object.keys(S.star).length;
+  $('unitLabel').textContent=S.scope==='wrong'?'错题重练':S.scope==='star'?'我的收藏':(S.unit?'Unit '+S.unit:'全部单元');
+  $('posLabel').textContent=deck.length?(idx+1)+' / '+deck.length:'0 / 0';
+  $('bar').style.width=deck.length?((idx+1)/deck.length*100)+'%':'0%';
+  document.querySelectorAll('#modeBar button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===S.mode));
+  document.querySelectorAll('#scopeBar .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.scope===S.scope));
+  document.querySelectorAll('#unitBar .chip').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.unit)===S.unit));
+
+  const card=$('card'), bar=$('actBar');
+  if(!c){
+    card.innerHTML='<div class="empty"><div><span class="big">🦈</span>这一组没有词<span class="s">换个单元，或切回「全部」</span></div></div>';
+    bar.innerHTML='<button class="btn go" id="actBtn">重新开始</button>';
+    $('actBtn').onclick=()=>{buildDeck();render();}; return;
+  }
+
+  if(S.mode==='card'){
+    const revealed=judged;
+    card.innerHTML=shell(c,
+      '<div class="word">'+esc(c.p)+'</div>'
+      +'<div class="phon"><button class="spk" data-speak="'+esc(c.p)+'">🔊</button><span>先回忆释义，再点下面的按钮</span></div>'
+      +(revealed
+        ? '<div class="mean">'+esc(c.c||'（无释义）')
+            +(c.a?'<span class="key">填空词 <b>'+esc(c.a)+'</b></span>':'')+'</div>'
+        : ''),
+      '');
+    bar.innerHTML=revealed
+      ? '<button class="btn doubt" id="doubtBtn">🤔 模糊</button><button class="btn know" id="knowBtn">😎 认识</button>'
+      : '<button class="btn skip" id="skipBtn">跳过</button><button class="btn go" id="revealBtn">显示释义</button>';
+    if(revealed){
+      $('doubtBtn').onclick=()=>{ mark(c.id,false); save(); buzz(false); step(); };
+      $('knowBtn').onclick=()=>{ mark(c.id,true); count(); save(); cheer(); buzz(true); step(); };
+    } else {
+      $('skipBtn').onclick=()=>step();
+      $('revealBtn').onclick=()=>{ judged=true; render(); };
+    }
+  }
+
+  else if(S.mode==='choice'){
+    if(!optCache || optCache.id!==c.id) optCache={id:c.id, list:makeOptions(c)};
+    const opts=optCache.list;
+    const cls=(o,i)=>{
+      if(answered===null) return '';
+      if(o===c.c) return ' right';
+      if(answered===i) return ' wrong';
+      return '';
+    };
+    card.innerHTML=shell(c,
+      '<div class="word">'+esc(c.p)+'</div>'
+      +'<div class="phon"><button class="spk" data-speak="'+esc(c.p)+'">🔊</button><span>选出正确的中文释义</span></div>'
+      +'<div class="opts">'+opts.map((o,i)=>'<button class="opt'+cls(o,i)+'" data-i="'+i+'">'+esc(o)+'</button>').join('')+'</div>');
+    bar.innerHTML='<button class="btn skip" id="skipBtn">跳过</button>'
+      +'<button class="btn go '+(answered===null?'off':'')+'" id="nextBtn">下一个 →</button>';
+    card.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const i=Number(b.dataset.i); if(answered!==null) return;
+      answered=i; judged=true;
+      const ok=opts[i]===c.c;
+      mark(c.id,ok); if(ok){count();cheer();} save(); buzz(ok); render();
+    });
+    $('skipBtn').onclick=()=>step();
+    $('nextBtn').onclick=()=>step();
+  }
+
+  else if(S.mode==='spell'){
+    if(!answered){
+      card.innerHTML=shell(c,
+        '<div class="mean" style="margin-top:2px">'+esc(c.c||'（无释义）')+'</div>'
+        +'<div class="phon" style="margin-top:12px"><span>拼出对应的英文</span></div>'
+        +'<input type="text" id="inp" placeholder="English…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">'
+        +'<div class="verdict" id="verdict"></div>');
+      bar.innerHTML='<button class="btn skip" id="skipBtn">跳过</button><button class="btn go" id="submitBtn">提交</button>';
+      $('skipBtn').onclick=()=>step(); $('submitBtn').onclick=submit;
+      setTimeout(()=>{const i=$('inp'); if(i)i.focus();},120);
+    } else {
+      const ok=answered==='ok';
+      card.innerHTML=shell(c,
+        '<div class="mean" style="margin-top:2px">'+esc(c.c||'')+'</div>'
+        +'<div class="word" style="margin-top:14px;color:'+(ok?'var(--green-deep)':'var(--sky-deep)')+'">'+esc(c.p)+'</div>'
+        +'<div class="verdict '+(ok?'ok':'bad')+'">'+(ok?'✓ 拼对了':'✗ 正确答案如上')+'</div>'
+        +'<div class="phon"><button class="spk" data-speak="'+esc(c.p)+'">🔊</button></div>');
+      bar.innerHTML='<button class="btn go" id="nextBtn">下一个 →</button>';
+      $('nextBtn').onclick=()=>step();
+    }
+  }
+
+  else {
+    const sent=c.s.replace(/__BLANK__/g,'<span class="blank">＿＿＿＿</span>');
+    if(!answered){
+      card.innerHTML=shell(c,
+        '<div class="word" style="font-size:calc(var(--fs) - 6px)">'+sent+'</div>'
+        +'<div class="mean">'+esc(c.c||'')+'</div>'
+        +'<input type="text" id="inp" placeholder="填入空里的词" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">'
+        +'<div class="verdict" id="verdict"></div>');
+      bar.innerHTML='<button class="btn skip" id="skipBtn">跳过</button><button class="btn go" id="submitBtn">提交</button>';
+      $('skipBtn').onclick=()=>step(); $('submitBtn').onclick=submit;
+      setTimeout(()=>{const i=$('inp'); if(i)i.focus();},120);
+    } else {
+      const ok=answered==='ok';
+      const filled=c.s.replace(/__BLANK__/g,'<span class="tip">'+esc(c.a)+'</span>');
+      card.innerHTML=shell(c,
+        '<div class="word" style="font-size:calc(var(--fs) - 6px)">'+filled+'</div>'
+        +'<div class="mean">'+esc(c.c||'')+'</div>'
+        +'<div class="verdict '+(ok?'ok':'bad')+'">'+(ok?'✓ 答对了':'✗ 正确答案：'+esc(c.a))+'</div>'
+        +'<div class="phon"><button class="spk" data-speak="'+esc(c.p)+'">🔊</button></div>');
+      bar.innerHTML='<button class="btn go" id="nextBtn">下一个 →</button>';
+      $('nextBtn').onclick=()=>step();
+    }
+  }
+  card.querySelectorAll('[data-speak]').forEach(b=>b.onclick=e=>{e.stopPropagation();speak(b.dataset.speak);});
+  const st=$('starBtn'); if(st) st.onclick=()=>{ if(S.star[c.id]) delete S.star[c.id]; else S.star[c.id]=1; save(); render(); };
+}
+
+function makeOptions(c){
+  const pool=DATA.filter(x=>x.id!==c.id && x.c).map(x=>x.c);
+  const seen=new Set([c.c]), distract=[];
+  let guard=0;
+  while(distract.length<3 && guard++<400){
+    const v=pool[Math.floor(Math.random()*pool.length)];
+    if(v && !seen.has(v)){ seen.add(v); distract.push(v); }
+  }
+  const all=[c.c,...distract];
+  for(let i=all.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [all[i],all[j]]=[all[j],all[i]]; }
+  return all;
+}
+function submit(){
+  const c=cur(); const inp=$('inp'); if(!c||!inp) return;
+  const val=(inp.value||'').trim().toLowerCase();
+  if(!val){ inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),420); return; }
+  const target=(S.mode==='cloze'?(c.a||''):c.p).toLowerCase();
+  const ok=val===target||val.replace(/\s+/g,' ')===target.replace(/\s+/g,' ');
+  answered=ok?'ok':'bad'; mark(c.id,ok); if(ok){count();cheer();} save(); buzz(ok); render();
+  if(!ok){ const cd=$('card'); cd.classList.add('shake'); setTimeout(()=>cd.classList.remove('shake'),420); }
+}
+function mark(id,ok){ if(ok){S.known[id]=1; delete S.wrong[id];} else {S.wrong[id]=1;} }
+function step(){ idx=(idx+1)%(deck.length||1); judged=false; answered=null; optCache=null; render(); }
+function prev(){ idx=(idx-1+(deck.length||1))%(deck.length||1); judged=false; answered=null; optCache=null; render(); }
+
+function buildUnitBar(){
+  const units=[...new Set(DATA.map(x=>x.u))].sort((a,b)=>a-b);
+  $('unitBar').innerHTML=units.map(u=>'<button class="chip" data-unit="'+u+'" aria-pressed="false">'
+    +'<span class="em">'+(UNIT[u]||['📘'])[0]+'</span>Unit '+u+'<span class="n">'+DATA.filter(x=>x.u===u).length+'</span></button>').join('');
+  $('unitBar').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{S.unit=Number(b.dataset.unit);S.scope='all';save();buildDeck();render();});
+}
+function sheet(h){ $('panel').innerHTML=h; $('sheet').classList.add('on'); }
+function closeSheet(){ $('sheet').classList.remove('on'); }
+$('sheet').onclick=e=>{ if(e.target===$('sheet')) closeSheet(); };
+$('setBtn').onclick=()=>{
+  sheet('<h2>设置</h2><div class="lab">字号</div><div class="btnrow">'
+    +'<button data-fs="26" aria-pressed="'+(S.fs===26)+'">小</button><button data-fs="32" aria-pressed="'+(S.fs===32)+'">标准</button>'
+    +'<button data-fs="38" aria-pressed="'+(S.fs===38)+'">大</button><button data-fs="44" aria-pressed="'+(S.fs===44)+'">特大</button></div>'
+    +'<div class="lab">主题</div><div class="btnrow"><button data-theme="light" aria-pressed="'+(S.theme==='light')+'">☀️ 浅色</button>'
+    +'<button data-theme="dark" aria-pressed="'+(S.theme==='dark')+'">🌙 深色</button></div>'
+    +'<div class="lab">顺序</div><div class="btnrow"><button data-shuffle="0" aria-pressed="'+(!S.shuffle)+'">按课程顺序</button>'
+    +'<button data-shuffle="1" aria-pressed="'+S.shuffle+'">每天随机</button></div>'
+    +'<div class="lab">每日目标</div><div class="btnrow"><button data-goal="10" aria-pressed="'+(S.goal===10)+'">10 词</button>'
+    +'<button data-goal="20" aria-pressed="'+(S.goal===20)+'">20 词</button><button data-goal="40" aria-pressed="'+(S.goal===40)+'">40 词</button></div>'
+    +'<div class="lab">进度备份（换设备时用）</div><div class="btnrow">'
+    +'<button id="expBtn">📤 导出进度</button><button id="impBtn">📥 导入进度</button></div>'
+    +'<div id="bakBox"></div>'
+    +'<div class="stat">键盘：<kbd>空格</kbd> 显示/下一个 · <kbd>←</kbd><kbd>→</kbd> 翻页 · <kbd>S</kbd> 收藏</div>'
+    +'<div class="btnrow"><button data-close="1" style="flex:1;background:linear-gradient(150deg,var(--sky),var(--sky-deep));border-color:var(--sky);color:#fff">完成</button></div>');
+  $('panel').querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{S.fs=+b.dataset.fs;save();applyTheme();closeSheet();});
+  $('panel').querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{S.theme=b.dataset.theme;save();applyTheme();closeSheet();});
+  $('panel').querySelectorAll('[data-shuffle]').forEach(b=>b.onclick=()=>{S.shuffle=b.dataset.shuffle==='1';save();buildDeck();render();closeSheet();});
+  $('panel').querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>{S.goal=+b.dataset.goal;save();render();closeSheet();});
+  $('panel').querySelector('[data-close]').onclick=closeSheet;
+  const box=$('bakBox');
+  const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/,'');
+  const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.trim()))));
+  $('expBtn').onclick=()=>{
+    const code=enc({v:1,known:S.known,wrong:S.wrong,star:S.star,day:S.day,
+                    fs:S.fs,theme:S.theme,shuffle:S.shuffle,goal:S.goal});
+    box.innerHTML='<textarea id="bakTxt" readonly spellcheck="false" style="width:100%;min-height:110px;'
+      +'font-size:11px;font-family:ui-monospace,monospace;border:2px solid var(--line);border-radius:14px;padding:10px;'
+      +'background:var(--bg);color:var(--sub)">'+code+'</textarea>'
+      +'<div class="btnrow"><button id="cpBtn" style="flex:1">复制这段码</button></div>';
+    $('cpBtn').onclick=async()=>{
+      const t=$('bakTxt'); t.select(); t.setSelectionRange(0,99999);
+      try{ await navigator.clipboard.writeText(t.value); $('cpBtn').textContent='✓ 已复制'; }
+      catch(e){ document.execCommand('copy'); $('cpBtn').textContent='✓ 已选中，请长按复制'; }
+      setTimeout(()=>$('cpBtn').textContent='复制这段码',1800);
+    };
+  };
+  $('impBtn').onclick=()=>{
+    box.innerHTML='<textarea id="bakTxt" placeholder="把另一台设备导出的码粘到这里" spellcheck="false" '
+      +'style="width:100%;min-height:110px;font-size:11px;font-family:ui-monospace,monospace;'
+      +'border:2px solid var(--line);border-radius:14px;padding:10px;background:var(--bg);color:var(--ink)"></textarea>'
+      +'<div class="btnrow"><button id="doImp" style="flex:1;background:linear-gradient(150deg,var(--sky),var(--sky-deep));'
+      +'border-color:var(--sky);color:#fff">恢复进度</button></div>';
+    $('doImp').onclick=()=>{
+      try{
+        const o=dec($('bakTxt').value||'');
+        if(!o||typeof o!=='object'||!o.known) throw new Error('bad');
+        S.known=o.known; S.wrong=o.wrong||{}; S.star=o.star||{}; S.day=o.day||{};
+        if(o.fs)S.fs=o.fs; if(o.theme)S.theme=o.theme; if(o.goal)S.goal=o.goal;
+        save(); applyTheme(); toast('✓ 进度已恢复','ok'); setTimeout(()=>location.reload(),700);
+      }catch(e){ toast('这段码读不出来，确认是完整复制的','bad'); }
+    };
+  };
+};
+$('statsBtn').onclick=()=>{
+  const total=DATA.length,known=Object.keys(S.known).length,wrong=Object.keys(S.wrong).length,star=Object.keys(S.star).length;
+  const done=todayCount();
+  sheet('<h2>我的战绩</h2><div class="stat">今日已斩 <b>'+done+'</b> / '+S.goal+(done>=S.goal?' 🎉 达成':'')
+    +'<br>累计记住 <b>'+known+'</b> / '+total+'（'+Math.round(known/total*100)+'%）<br>错题 <b>'+wrong+'</b> · 收藏 <b>'+star+'</b></div>'
+    +'<div class="btnrow"><button data-reset="1">清空进度</button>'
+    +'<button data-close="1" style="flex:1;background:linear-gradient(150deg,var(--sky),var(--sky-deep));border-color:var(--sky);color:#fff">关闭</button></div>');
+  $('panel').querySelector('[data-close]').onclick=closeSheet;
+  const rb=$('panel').querySelector('[data-reset]');
+  rb.onclick=()=>{ if(rb.dataset.armed){ LS.del(KEY); location.reload(); return; }
+    rb.dataset.armed='1'; rb.textContent='再点一次确认清空'; rb.style.color='var(--red)';
+    setTimeout(()=>{ if(rb){delete rb.dataset.armed; rb.textContent='清空进度'; rb.style.color='';} },3000); };
+};
+$('modeBar').onclick=e=>{const b=e.target.closest('button'); if(!b)return; S.mode=b.dataset.mode; save(); buildDeck(); render();};
+$('scopeBar').onclick=e=>{const b=e.target.closest('.chip'); if(!b)return; S.scope=b.dataset.scope; save(); buildDeck(); render();};
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'){ if(e.key==='Enter'){e.preventDefault();submit();} return; }
+  if(e.key===' '){ e.preventDefault(); const r=$('revealBtn')||$('nextBtn')||$('submitBtn'); if(r) r.click(); }
+  else if(e.key==='ArrowRight') step();
+  else if(e.key==='ArrowLeft') prev();
+  else if(e.key.toLowerCase()==='s'){ const st=$('starBtn'); if(st) st.click(); }
+});
+let tx=0,ty=0;
+$('card').addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+$('card').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>62 && Math.abs(dx)>Math.abs(dy)*1.6){ dx<0?step():prev(); }
+},{passive:true});
+
+applyTheme(); buildUnitBar(); buildDeck(); render();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

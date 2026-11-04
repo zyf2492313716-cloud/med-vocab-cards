@@ -1,5 +1,5 @@
 /* 斩词 PWA 离线缓存：改了 index.html 记得把 VERSION 往上加一位 */
-const VERSION = 'zanci-v1';
+const VERSION = 'zanci-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
   './icons/favicon-32.png', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 

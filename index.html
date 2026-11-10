@@ -592,6 +592,7 @@ $('setBtn').onclick=()=>{
     +'<button id="expBtn">📤 导出进度</button><button id="impBtn">📥 导入进度</button></div>'
     +'<div id="bakBox"></div>'
     +'<div class="stat">键盘：<kbd>空格</kbd> 显示/下一个 · <kbd>←</kbd><kbd>→</kbd> 翻页 · <kbd>S</kbd> 收藏</div>'
+    +'<div class="btnrow"><button id="reloadAppBtn" style="flex:1;border:1.5px dashed var(--line);background:none;color:var(--sub);font-size:13px">🔄 检查更新 / 强制刷新最新版</button></div>'
     +'<div class="btnrow"><button data-close="1" style="flex:1;background:linear-gradient(150deg,var(--sky),var(--sky-deep));border-color:var(--sky);color:#fff">完成</button></div>');
   $('panel').querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{S.fs=+b.dataset.fs;save();applyTheme();closeSheet();});
   $('panel').querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{S.theme=b.dataset.theme;save();applyTheme();closeSheet();});
@@ -634,6 +635,23 @@ $('setBtn').onclick=()=>{
       }catch(e){ toast('这段码读不出来，确认是完整复制的','bad'); }
     };
   };
+  const upBtn=$('reloadAppBtn');
+  if(upBtn){
+    upBtn.onclick=async()=>{
+      toast('正在拉取最新版本...','ok');
+      try{
+        if('serviceWorker' in navigator){
+          const regs=await navigator.serviceWorker.getRegistrations();
+          for(const r of regs) await r.unregister();
+        }
+        if('caches' in window){
+          const keys=await caches.keys();
+          for(const k of keys) await caches.delete(k);
+        }
+      }catch(e){}
+      location.href=location.pathname+'?v='+Date.now();
+    };
+  }
 };
 $('statsBtn').onclick=()=>{
   const total=DATA.length,known=Object.keys(S.known).length,wrong=Object.keys(S.wrong).length,star=Object.keys(S.star).length;
@@ -666,7 +684,22 @@ $('card').addEventListener('touchend',e=>{
 
 applyTheme(); buildUnitBar(); buildDeck(); render();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.onupdatefound = () => {
+      const inst = reg.installing;
+      if (inst) {
+        inst.onstatechange = () => {
+          if (inst.state === 'installed' && navigator.serviceWorker.controller) {
+            toast('发现新版词表，正在自动刷新...', 'ok');
+            setTimeout(() => location.reload(), 800);
+          }
+        };
+      }
+    };
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
 }
 </script>
 </body>
